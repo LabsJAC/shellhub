@@ -70,14 +70,20 @@ func TestDeleteDevice(t *testing.T) {
 
 	ctx := context.TODO()
 
+	user := &models.User{Name: "name", Email: "", Username: "username", ID: "id"}
+	namespace := &models.Namespace{Name: "group1", Owner: "id", TenantID: "tenant"}
 	device := &models.Device{UID: "uid", TenantID: "tenant"}
 
-	mock.On("DeleteDevice", ctx, models.UID(device.UID)).
-		Return(nil).Once()
+	mock.On("GetUserByUsername", ctx, user.Username).
+		Return(user, nil).Once()
+	mock.On("GetNamespace", ctx, device.TenantID).
+		Return(namespace, nil).Once()
 	mock.On("GetDeviceByUID", ctx, models.UID(device.UID), device.TenantID).
 		Return(device, nil).Once()
+	mock.On("DeleteDevice", ctx, models.UID(device.UID)).
+		Return(nil).Once()
 
-	err := s.DeleteDevice(ctx, models.UID(device.UID), device.TenantID)
+	err := s.DeleteDevice(ctx, models.UID(device.UID), device.TenantID, user.Username)
 	assert.NoError(t, err)
 
 	mock.AssertExpectations(t)
@@ -89,9 +95,15 @@ func TestRenameDevice(t *testing.T) {
 
 	ctx := context.TODO()
 
+	user := &models.User{Name: "name", Email: "", Username: "username", ID: "id"}
+	namespace := &models.Namespace{Name: "group1", Owner: "id", TenantID: "tenant"}
 	device := &models.Device{UID: "uid", Name: "name", TenantID: "tenant"}
 	renamedDevice := &models.Device{UID: "uid", Name: "rename", TenantID: "tenant"}
 
+	mock.On("GetUserByUsername", ctx, user.Username).
+		Return(user, nil).Once()
+	mock.On("GetNamespace", ctx, device.TenantID).
+		Return(namespace, nil).Once()
 	mock.On("GetDeviceByUID", ctx, models.UID(device.UID), device.TenantID).
 		Return(device, nil).Once()
 	mock.On("GetDeviceByName", ctx, renamedDevice.Name, device.TenantID).
@@ -99,7 +111,7 @@ func TestRenameDevice(t *testing.T) {
 	mock.On("RenameDevice", ctx, models.UID(device.UID), renamedDevice.Name).
 		Return(nil).Once()
 
-	err := s.RenameDevice(ctx, models.UID(device.UID), renamedDevice.Name, device.TenantID)
+	err := s.RenameDevice(ctx, models.UID(device.UID), renamedDevice.Name, device.TenantID, user.Username)
 	assert.NoError(t, err)
 
 	mock.AssertExpectations(t)
@@ -142,11 +154,17 @@ func TestUpdatePendingStatus(t *testing.T) {
 	mock := &mocks.Store{}
 	s := NewService(store.Store(mock))
 
+	user := &models.User{Name: "name", Email: "", Username: "username", ID: "id"}
+	namespace := &models.Namespace{Name: "group1", Owner: "id", TenantID: "tenant"}
 	identity := &models.DeviceIdentity{MAC: "mac"}
 	device := &models.Device{UID: "uid", Name: "name", TenantID: "tenant", Identity: identity}
 	oldDevice := &models.Device{UID: "old_uid", Name: "name", TenantID: "tenant", Identity: identity}
 	ctx := context.TODO()
 
+	mock.On("GetUserByUsername", ctx, user.Username).
+		Return(user, nil).Once()
+	mock.On("GetNamespace", ctx, device.TenantID).
+		Return(namespace, nil).Once()
 	mock.On("GetDeviceByUID", ctx, models.UID(device.UID), device.TenantID).
 		Return(device, nil).Once()
 	mock.On("GetDeviceByMac", ctx, "mac", device.TenantID, "accepted").
@@ -159,7 +177,7 @@ func TestUpdatePendingStatus(t *testing.T) {
 		Return(nil).Once()
 	mock.On("UpdatePendingStatus", ctx, models.UID(device.UID), "accepted").
 		Return(nil).Once()
-	err := s.UpdatePendingStatus(ctx, models.UID("uid"), "accepted", "tenant")
+	err := s.UpdatePendingStatus(ctx, models.UID("uid"), "accepted", "tenant", user.Username)
 
 	assert.NoError(t, err)
 
